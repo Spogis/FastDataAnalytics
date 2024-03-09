@@ -38,7 +38,7 @@ To run the application, follow these steps:
 
 * Execute the `main.py` file using Python: **python main.py**
 
-* After running the command, Dash will start the local server and you can access the application through your browser. Normally, the URL will be something like `http://127.0.0.1:8050/`.
+* After running the command, Dash will start the local server and you can access the application through your browser. Normally, the URL will be something like `http://127.0.0.3:8080/`.
 
 ## Example Datasets
 
