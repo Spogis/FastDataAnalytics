@@ -10,7 +10,7 @@ from scipy.interpolate import griddata
 from datetime import datetime
 from io import StringIO
 
-from AnalyticsAPP.DataAnalytics import *
+from analytics_app.DataAnalytics import *
 
 # Inicializa o app Dash
 app = dash.Dash(__name__,
