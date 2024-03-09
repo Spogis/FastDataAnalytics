@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 from ydata_profiling import ProfileReport
+import os
 
 def data_analytics(df):
     html_file = 'assets/relatorio_analise.html'
