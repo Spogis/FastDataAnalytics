@@ -22,7 +22,7 @@ app.title = "Fast Data Analytics"
 server = app.server
 
 
-app.title = "Fast Data Analytics"
+app.title = "Data Explorer - Profile Report and EDA App"
 
 server = app.server
 

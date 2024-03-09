@@ -28,7 +28,7 @@ To install the necessary dependencies, you need to have Python installed on your
 
    Inside the project directory, there is a file called `requirements.txt` that contains all the necessary libraries. To install them, execute the following command: **pip install -r requirements.txt**
 
-   This will install all the necessary dependencies to run Easy Curve Fit.
+   This will install all the necessary dependencies to run Data Explorer - Profile Report and EDA App.
 
 ## Execution
 
