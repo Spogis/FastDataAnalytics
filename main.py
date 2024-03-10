@@ -177,7 +177,6 @@ def parse_contents(contents, filename):
     try:
         if 'xlsx' in filename:
             df = pd.read_excel(io.BytesIO(decoded))
-            df = df.drop('Experiment', axis=1)
         else:
             return None
         return df
