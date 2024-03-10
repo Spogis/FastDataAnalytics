@@ -5,6 +5,7 @@ from dash import dcc, html, Input, Output, State, ctx
 import dash_bootstrap_components as dbc
 import pandas as pd
 import plotly.graph_objs as go
+import plotly.express as px
 import numpy as np
 from scipy.interpolate import griddata
 from datetime import datetime
@@ -36,6 +37,7 @@ app.layout = html.Div([
         dcc.Tab(label='Upload de Arquivo', value='tab-upload'),
         dcc.Tab(label='Gráfico 2D', value='tab-2d'),
         dcc.Tab(label='Gráfico 3D', value='tab-3d'),
+        dcc.Tab(label='Coordenadas Paralelas', value='tab-parcoords'),
     ], value='tab-upload'),
     html.Div(id='tabs-content'),
     dcc.Store(id='store-data')  # Componente para armazenar os dados
@@ -81,6 +83,11 @@ def render_content(tab, data):
             dcc.Dropdown(id='y-axis-column-3d', options=options),
             dcc.Dropdown(id='z-axis-column-3d', options=options),
             dcc.Graph(id='graph-3d', style={'height': '600px', 'width': '100%'}),
+        ])
+    elif tab == 'tab-parcoords' and data is not None:
+        df = pd.read_json(StringIO(data), orient='split')
+        return html.Div([
+            dcc.Graph(id='graph-parcoords'),
         ])
     return html.Div("Por favor, selecione um arquivo na aba 'Upload de Arquivo'.")
 
@@ -200,6 +207,18 @@ def update_output(contents, filename):
 
     Html_Page = ""
     return Html_Page, ""
+
+
+@app.callback(
+    Output('graph-parcoords', 'figure'),
+    [Input('store-data', 'data')]
+)
+def update_graph_parcoords(data):
+    if data:
+        df = pd.read_json(StringIO(data), orient='split')
+        fig = px.parallel_coordinates(df, color=df.columns[-1])
+        return fig
+    return go.Figure()
 
 
 if __name__ == '__main__':
