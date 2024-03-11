@@ -62,7 +62,7 @@ def render_content(tab, data):
             ),
         ])
     elif tab == 'tab-report' and data is not None:
-        df = pd.read_json(data, orient='split')
+        df = pd.read_json(StringIO(data), orient='split')
         return html.Div([
             html.Div([
                 html.Button('Create Report', id='create-report-btn', n_clicks=0,
@@ -78,7 +78,7 @@ def render_content(tab, data):
             ], style={'display': 'flex', 'justifyContent': 'center', 'alignItems': 'center', 'marginBottom': '10px'}),
         ])
     elif tab == 'tab-2d' and data is not None:
-        df = pd.read_json(data, orient='split')
+        df = pd.read_json(StringIO(data), orient='split')
         options = [{'label': i, 'value': i} for i in df.columns]
         return html.Div([
             dcc.Dropdown(id='x-axis-column-2d', options=options),
@@ -86,7 +86,7 @@ def render_content(tab, data):
             dcc.Graph(id='graph-2d', style={'height': '600px', 'width': '100%'}),
         ])
     elif tab == 'tab-3d' and data is not None:
-        df = pd.read_json(data, orient='split')
+        df = pd.read_json(StringIO(data), orient='split')
         options = [{'label': i, 'value': i} for i in df.columns]
         return html.Div([
             dcc.Dropdown(id='x-axis-column-3d', options=options),
@@ -207,7 +207,6 @@ def parse_contents(contents, filename):
 
 
 def update_output(n_clicks, data):
-    print('Teste', n_clicks)
     if data:
         df = pd.read_json(StringIO(data), orient='split')
         if df is not None:
