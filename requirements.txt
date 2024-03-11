@@ -9,3 +9,4 @@ scikit-learn>=1.4.0
 pillow>=10.2.0
 pyDOE2>=1.3.0
 dash-extensions>=1.0.12
+PyKrige~=1.7.1

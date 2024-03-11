@@ -10,8 +10,10 @@ import numpy as np
 from scipy.interpolate import griddata
 from datetime import datetime
 from io import StringIO
+from pykrige.ok import OrdinaryKriging
 
 from analytics_app.DataAnalytics import *
+from analytics_app.Kriging import *
 
 # Inicializa o app Dash
 app = dash.Dash(__name__,
@@ -38,6 +40,7 @@ app.layout = html.Div([
         dcc.Tab(label='Profile Report', value='tab-report'),
         dcc.Tab(label='2D Chart', value='tab-2d'),
         dcc.Tab(label='3D Chart', value='tab-3d'),
+        dcc.Tab(label='Kriging Interpolation', value='tab-kriging'),
         dcc.Tab(label='Parallel Coordinates Plot', value='tab-parcoords'),
     ], value='tab-upload'),
     html.Div(id='tabs-content'),
@@ -65,6 +68,7 @@ def render_content(tab, data):
         df = pd.read_json(StringIO(data), orient='split')
         return html.Div([
             html.Div([
+                html.Br(),
                 html.Button('Create Report', id='create-report-btn', n_clicks=0,
                             style={'backgroundColor': 'orange', 'color': 'white', 'fontWeight': 'bold', 'fontSize': '20px',
                                    'marginRight': '10px'}),
@@ -99,6 +103,39 @@ def render_content(tab, data):
         return html.Div([
             dcc.Graph(id='graph-parcoords'),
         ])
+    elif tab == 'tab-kriging' and data is not None:
+        df = pd.read_json(StringIO(data), orient='split')
+        options = [{'label': i, 'value': i} for i in df.columns]
+        return html.Div([
+            html.Div([
+                html.H4('Select the 2 Independent Variables', style={'text-align': 'center'}),
+                dcc.Dropdown(id='independent-vars-3d', options=options, multi=True, value=[],
+                             style={'width': '400px', 'margin': '0 auto'}),
+            ], style={'display': 'flex', 'flex-direction': 'column', 'alignItems': 'center', 'justifyContent': 'center',
+                      'marginBottom': '10px'}),
+
+            html.Div([
+                html.Br(),
+                html.H4('Select the Dependent Variable (1 variable)', style={'text-align': 'center'}),
+                dcc.Dropdown(id='dependent-var-3d', options=options, multi=False, value=None,
+                             style={'width': '400px', 'margin': '0 auto'}),
+            ], style={'display': 'flex', 'flex-direction': 'column', 'alignItems': 'center', 'justifyContent': 'center',
+                      'marginBottom': '10px'}),
+
+            html.Div([
+                html.Br(),
+                html.Button('Generate Kriging Interpolation', id='generate-kriging-3d', n_clicks=0,
+                            style={'backgroundColor': 'orange', 'color': 'white', 'fontWeight': 'bold',
+                                   'fontSize': '20px',
+                                   'marginRight': '10px'}
+                            ),
+                html.Br(),
+                html.Div(id='kriging-plot-output-3d')
+            ], style={'display': 'flex', 'flex-direction': 'column', 'alignItems': 'center', 'justifyContent': 'center',
+                      'marginBottom': '10px'}),
+        ], style={'display': 'flex', 'flex-direction': 'column', 'alignItems': 'center', 'justifyContent': 'center',
+                  'width': '100%'})
+
     return html.Div([
         html.Br(),
         html.H2("Please select a file in the 'File Upload' tab.")
@@ -172,7 +209,7 @@ def update_graph_3d(xaxis_column_name, yaxis_column_name, zaxis_column_name, dat
                 'data': [go.Surface(z=z_grid, x=x_unique, y=y_unique)],
                 'layout': go.Layout(
                     autosize=True,
-                    margin=dict(l=50, r=50, b=30, t=30, pad=4),  # Ajusta as margens aqui
+                    margin=dict(l=50, r=50, b=30, t=30, pad=4),
                     scene=dict(
                         xaxis=dict(title=xaxis_column_name),
                         yaxis=dict(title=yaxis_column_name),
@@ -232,6 +269,38 @@ def update_graph_parcoords(data):
         return fig
     return go.Figure()
 
+
+@app.callback(
+    Output('kriging-plot-output-3d', 'children'),  # Assumindo que você tenha um componente para o plot
+    [Input('generate-kriging-3d', 'n_clicks')],
+    [State('independent-vars-3d', 'value'),
+     State('dependent-var-3d', 'value'),
+     State('store-data', 'data')]
+)
+def update_kriging_plot(n_clicks, independent_vars, dependent_var, data):
+    if n_clicks > 0 and data is not None and len(independent_vars) == 2 and dependent_var is not None:
+        df = pd.read_json(StringIO(data), orient='split')
+        # Realiza a interpolação Kriging
+        OK3D, gridx, gridy, z, ss = perform_kriging_3d(independent_vars, dependent_var, df)
+
+        # Cria um gráfico de superfície com os resultados da interpolação
+        fig = go.Figure(data=[go.Surface(z=z, x=gridx, y=gridy)])
+
+        fig.update_layout(autosize=True,
+                          scene=dict(
+                              xaxis_title=independent_vars[0],
+                              yaxis_title=independent_vars[1],
+                              zaxis_title=dependent_var,
+                              aspectmode='cube'
+                          ),
+                          margin=dict(l=50, r=50, b=30, t=30, pad=4),
+                          height=600,
+                          width=800,
+                          )
+
+        return dcc.Graph(figure=fig)
+
+    return "Select two independent variables and one dependent variable and click 'Generate Kriging Interpolation' to see the result."
 
 if __name__ == '__main__':
     app.run_server(host='127.0.0.3', port=8080, debug=False)
