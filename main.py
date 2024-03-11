@@ -99,7 +99,10 @@ def render_content(tab, data):
         return html.Div([
             dcc.Graph(id='graph-parcoords'),
         ])
-    return html.Div("Please select a file in the 'File Upload' tab.")
+    return html.Div([
+        html.Br(),
+        html.H2("Please select a file in the 'File Upload' tab.")
+    ], style={'display': 'flex', 'justifyContent': 'center', 'alignItems': 'center', 'marginBottom': '10px'}),
 
 @app.callback(
     Output('store-data', 'data'),
