@@ -34,10 +34,11 @@ app.layout = html.Div([
     ], style={'text-align': 'center', 'margin-bottom': '10px'}),
 
     dcc.Tabs(id="tabs", children=[
-        dcc.Tab(label='Upload de Arquivo', value='tab-upload'),
-        dcc.Tab(label='Gráfico 2D', value='tab-2d'),
-        dcc.Tab(label='Gráfico 3D', value='tab-3d'),
-        dcc.Tab(label='Coordenadas Paralelas', value='tab-parcoords'),
+        dcc.Tab(label='File Upload', value='tab-upload'),
+        dcc.Tab(label='Profile Report', value='tab-report'),
+        dcc.Tab(label='2D Chart', value='tab-2d'),
+        dcc.Tab(label='3D Chart', value='tab-3d'),
+        dcc.Tab(label='Parallel Coordinates Plot', value='tab-parcoords'),
     ], value='tab-upload'),
     html.Div(id='tabs-content'),
     dcc.Store(id='store-data')  # Componente para armazenar os dados
@@ -51,7 +52,7 @@ def render_content(tab, data):
         return html.Div([
             dcc.Upload(
                 id='upload-data',
-                children=html.Div(['Arraste ou ', html.A('selecione um arquivo Excel')]),
+                children=html.Div(['Drag or ', html.A('select an Excel file')]),
                 style={
                     'width': '100%', 'height': '60px', 'lineHeight': '60px',
                     'borderWidth': '1px', 'borderStyle': 'dashed', 'borderRadius': '5px',
@@ -59,13 +60,22 @@ def render_content(tab, data):
                 },
                 multiple=False
             ),
+        ])
+    elif tab == 'tab-report' and data is not None:
+        df = pd.read_json(data, orient='split')
+        return html.Div([
+            html.Div([
+                html.Button('Create Report', id='create-report-btn', n_clicks=0,
+                            style={'backgroundColor': 'orange', 'color': 'white', 'fontWeight': 'bold', 'fontSize': '20px',
+                                   'marginRight': '10px'}),
+            ], style={'display': 'flex', 'justifyContent': 'center', 'alignItems': 'center', 'marginBottom': '10px'}),
+
             html.Br(),
             dbc.Spinner(spinner_style={"width": "3rem", "height": "3rem"}, children=[html.Div(id="macro-output")]),
             html.Div([
                 html.Br(),
                 html.Iframe(id='html-viewer', src="", width='80%', height='600'),
             ], style={'display': 'flex', 'justifyContent': 'center', 'alignItems': 'center', 'marginBottom': '10px'}),
-
         ])
     elif tab == 'tab-2d' and data is not None:
         df = pd.read_json(data, orient='split')
@@ -89,7 +99,7 @@ def render_content(tab, data):
         return html.Div([
             dcc.Graph(id='graph-parcoords'),
         ])
-    return html.Div("Por favor, selecione um arquivo na aba 'Upload de Arquivo'.")
+    return html.Div("Please select a file in the 'File Upload' tab.")
 
 @app.callback(
     Output('store-data', 'data'),
@@ -184,17 +194,19 @@ def parse_contents(contents, filename):
         print(e)
         return None
 
+
 @app.callback([Output('html-viewer', 'src', allow_duplicate=True),
                Output("macro-output", "children", allow_duplicate=True),],
-              [Input('upload-data', 'contents')],
-              [State('upload-data', 'filename')],
+              Input('create-report-btn', 'n_clicks'),
+              [State('store-data', 'data')],
               prevent_initial_call=True
               )
 
 
-def update_output(contents, filename):
-    if contents is not None:
-        df = parse_contents(contents, filename)
+def update_output(n_clicks, data):
+    print('Teste', n_clicks)
+    if data:
+        df = pd.read_json(StringIO(data), orient='split')
         if df is not None:
             data_analytics(df)
             timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
@@ -203,10 +215,9 @@ def update_output(contents, filename):
         else:
             Html_Page = ""
             return Html_Page, ""
-
-    Html_Page = ""
-    return Html_Page, ""
-
+    else:
+        Html_Page = ""
+        return Html_Page, ""
 
 @app.callback(
     Output('graph-parcoords', 'figure'),
