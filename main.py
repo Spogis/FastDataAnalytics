@@ -40,7 +40,7 @@ app.layout = html.Div([
         dcc.Tab(label='Profile Report', value='tab-report'),
         dcc.Tab(label='2D Chart', value='tab-2d'),
         dcc.Tab(label='3D Chart', value='tab-3d'),
-        dcc.Tab(label='Kriging Interpolation', value='tab-kriging'),
+        dcc.Tab(label='3D Kriging Interpolation', value='tab-kriging'),
         dcc.Tab(label='Parallel Coordinates Plot', value='tab-parcoords'),
     ], value='tab-upload'),
     html.Div(id='tabs-content'),
@@ -102,6 +102,16 @@ def render_content(tab, data):
         df = pd.read_json(StringIO(data), orient='split')
         return html.Div([
             dcc.Graph(id='graph-parcoords'),
+            html.Br(),
+            html.Div([
+                html.Button('Download Descriptive Statistics', id='btn-stat-download', n_clicks=0,
+                            style={'backgroundColor': 'orange', 'color': 'white', 'fontWeight': 'bold',
+                                   'fontSize': '20px',
+                                   'marginRight': '10px'}),
+                dcc.Download(id="download-excel")
+            ], style={'display': 'flex', 'flex-direction': 'column', 'alignItems': 'center', 'justifyContent': 'center',
+                      'marginBottom': '10px'}),
+
             dash_table.DataTable(id='table',
                                  columns=[{'id': 'index', 'name': 'index'}] + [{'id': i, 'name': i} for i in
                                                                                df.columns],
@@ -330,7 +340,6 @@ def udpate_table(data, store_data_value):
                     # if one choice
                     dff = dff[dff[col].between(rng[0], rng[1])]
         descriptive_stats = dff.describe().reset_index()
-        print(descriptive_stats)
         return descriptive_stats.to_dict('records')
 
     descriptive_stats = df.describe().reset_index()
@@ -344,7 +353,6 @@ def udpate_table(data, store_data_value):
 def updateFilters(data, store_data_value):
     df = pd.read_json(StringIO(store_data_value), orient='split')
     dims = df.columns
-    print(dims)
     if data:
         key = list(data[0].keys())[0]
         col = dims[int(key.split('[')[1].split(']')[0])]
@@ -352,6 +360,20 @@ def updateFilters(data, store_data_value):
         newData[col] = data[0][key]
         return newData
     return {}
+
+# Callback para gerar e baixar o arquivo Excel
+@app.callback(
+    Output("download-excel", "data"),
+    Input("btn-stat-download", "n_clicks"),
+    State('table', 'data'),
+    prevent_initial_call=True
+)
+def generate_excel(n_clicks, stat_data_value):
+    filename = "assets/statistics.xlsx"
+    df = pd.DataFrame(stat_data_value)
+    df.to_excel(filename, index=False)
+    return dcc.send_file(filename)
+
 
 if __name__ == '__main__':
     app.run_server(host='127.0.0.3', port=8080, debug=False)
