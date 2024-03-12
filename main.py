@@ -1,7 +1,7 @@
 import base64
 import io
 import dash
-from dash import dcc, html, Input, Output, State, ctx
+from dash import dcc, html, Input, Output, State, ctx, dash_table, Patch
 import dash_bootstrap_components as dbc
 import pandas as pd
 import plotly.graph_objs as go
@@ -102,6 +102,11 @@ def render_content(tab, data):
         df = pd.read_json(StringIO(data), orient='split')
         return html.Div([
             dcc.Graph(id='graph-parcoords'),
+            dash_table.DataTable(id='table',
+                                 columns=[{'id': 'index', 'name': 'index'}] + [{'id': i, 'name': i} for i in
+                                                                               df.columns],
+                                 style_table={'overflowX': 'scroll'}),
+            dcc.Store(id='activefilters', data={})
         ])
     elif tab == 'tab-kriging' and data is not None:
         df = pd.read_json(StringIO(data), orient='split')
@@ -301,6 +306,52 @@ def update_kriging_plot(n_clicks, independent_vars, dependent_var, data):
         return dcc.Graph(figure=fig)
 
     return "Select two independent variables and one dependent variable and click 'Generate Kriging Interpolation' to see the result."
+
+@app.callback(
+    Output('table', 'data'),
+    Input("activefilters", "data"),
+    State('store-data', 'data')
+)
+def udpate_table(data, store_data_value):
+    df = pd.read_json(StringIO(store_data_value), orient='split')
+    if data:
+        dff = df.copy()
+        for col in data:
+            if data[col]:
+                rng = data[col][0]
+                if isinstance(rng[0], list):
+                    # if multiple choices combine df
+                    dff3 = pd.DataFrame(columns=df.columns)
+                    for i in rng:
+                        dff2 = dff[dff[col].between(i[0], i[1])]
+                        dff3 = pd.concat([dff3, dff2])
+                    dff = dff3
+                else:
+                    # if one choice
+                    dff = dff[dff[col].between(rng[0], rng[1])]
+        descriptive_stats = dff.describe().reset_index()
+        print(descriptive_stats)
+        return descriptive_stats.to_dict('records')
+
+    descriptive_stats = df.describe().reset_index()
+    return descriptive_stats.to_dict('records')
+
+@app.callback(
+    Output('activefilters', 'data'),
+    Input("graph-parcoords", "restyleData"),
+    State('store-data', 'data')
+)
+def updateFilters(data, store_data_value):
+    df = pd.read_json(StringIO(store_data_value), orient='split')
+    dims = df.columns
+    print(dims)
+    if data:
+        key = list(data[0].keys())[0]
+        col = dims[int(key.split('[')[1].split(']')[0])]
+        newData = Patch()
+        newData[col] = data[0][key]
+        return newData
+    return {}
 
 if __name__ == '__main__':
     app.run_server(host='127.0.0.3', port=8080, debug=False)
