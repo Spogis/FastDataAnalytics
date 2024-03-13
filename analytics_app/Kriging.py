@@ -1,4 +1,5 @@
 from pykrige.ok import OrdinaryKriging
+from pykrige.ok3d import OrdinaryKriging3D
 import numpy as np
 
 def perform_kriging_3d(independent_vars, dependent_var, df):

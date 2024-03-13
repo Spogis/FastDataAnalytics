@@ -53,16 +53,23 @@ app.layout = html.Div([
 def render_content(tab, data):
     if tab == 'tab-upload':
         return html.Div([
-            dcc.Upload(
-                id='upload-data',
-                children=html.Div(['Drag or ', html.A('select an Excel file')]),
-                style={
-                    'width': '100%', 'height': '60px', 'lineHeight': '60px',
-                    'borderWidth': '1px', 'borderStyle': 'dashed', 'borderRadius': '5px',
-                    'textAlign': 'center', 'margin': '10px'
-                },
-                multiple=False
-            ),
+            html.Div([
+                html.Br(),
+                dcc.Upload(
+                    id='upload-data',
+                    children=html.Div(['Drag or ', html.A('select an Excel file')]),
+                    style={
+                        'width': '500px', 'height': '60px', 'lineHeight': '60px',
+                        'borderWidth': '1px', 'borderStyle': 'dashed', 'borderRadius': '5px',
+                        'textAlign': 'center', 'margin': 'auto'
+                    },
+                    multiple=False
+                ),
+            ], style={'textAlign': 'center'}),
+
+            html.Div([
+                html.H5(id='file-name-output')
+            ], style={'textAlign': 'center'}),
         ])
     elif tab == 'tab-report' and data is not None:
         df = pd.read_json(StringIO(data), orient='split')
@@ -71,8 +78,8 @@ def render_content(tab, data):
                 html.Br(),
                 html.Button('Create Report', id='create-report-btn', n_clicks=0,
                             style={'backgroundColor': 'orange', 'color': 'white', 'fontWeight': 'bold', 'fontSize': '20px',
-                                   'marginRight': '10px'}),
-            ], style={'display': 'flex', 'justifyContent': 'center', 'alignItems': 'center', 'marginBottom': '10px'}),
+                                   'margin': 'auto'}),
+            ], style={'textAlign': 'center'}),
 
             html.Br(),
             dbc.Spinner(spinner_style={"width": "3rem", "height": "3rem"}, children=[html.Div(id="macro-output")]),
@@ -178,6 +185,10 @@ def store_data(contents, filename):
 def update_graph_2d(xaxis_column_name, yaxis_column_name, data):
     if data is not None:
         df = pd.read_json(StringIO(data), orient='split')
+        if 'Experiment' in df.columns:
+            # Se existir, remover a coluna 'Experiment'
+            df = df.drop(columns=['Experiment'])
+
         if xaxis_column_name and yaxis_column_name:
             return {
                 'data': [go.Scatter(
@@ -204,6 +215,10 @@ def update_graph_2d(xaxis_column_name, yaxis_column_name, data):
 def update_graph_3d(xaxis_column_name, yaxis_column_name, zaxis_column_name, data):
     if data:
         df = pd.read_json(StringIO(data), orient='split')
+        if 'Experiment' in df.columns:
+            # Se existir, remover a coluna 'Experiment'
+            df = df.drop(columns=['Experiment'])
+
         if xaxis_column_name and yaxis_column_name and zaxis_column_name:
             df[xaxis_column_name] = pd.to_numeric(df[xaxis_column_name], errors='coerce')
             df[yaxis_column_name] = pd.to_numeric(df[yaxis_column_name], errors='coerce')
@@ -242,6 +257,9 @@ def parse_contents(contents, filename):
     try:
         if 'xlsx' in filename:
             df = pd.read_excel(io.BytesIO(decoded))
+            if 'Experiment' in df.columns:
+                # Se existir, remover a coluna 'Experiment'
+                df = df.drop(columns=['Experiment'])
         else:
             return None
         return df
@@ -261,6 +279,10 @@ def parse_contents(contents, filename):
 def update_output(n_clicks, data):
     if data:
         df = pd.read_json(StringIO(data), orient='split')
+        if 'Experiment' in df.columns:
+            # Se existir, remover a coluna 'Experiment'
+            df = df.drop(columns=['Experiment'])
+
         if df is not None:
             data_analytics(df)
             timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
@@ -280,6 +302,10 @@ def update_output(n_clicks, data):
 def update_graph_parcoords(data):
     if data:
         df = pd.read_json(StringIO(data), orient='split')
+        if 'Experiment' in df.columns:
+            # Se existir, remover a coluna 'Experiment'
+            df = df.drop(columns=['Experiment'])
+
         fig = px.parallel_coordinates(df, color=df.columns[-1])
         return fig
     return go.Figure()
@@ -295,6 +321,10 @@ def update_graph_parcoords(data):
 def update_kriging_plot(n_clicks, independent_vars, dependent_var, data):
     if n_clicks > 0 and data is not None and len(independent_vars) == 2 and dependent_var is not None:
         df = pd.read_json(StringIO(data), orient='split')
+        if 'Experiment' in df.columns:
+            # Se existir, remover a coluna 'Experiment'
+            df = df.drop(columns=['Experiment'])
+
         # Realiza a interpolação Kriging
         OK3D, gridx, gridy, z, ss = perform_kriging_3d(independent_vars, dependent_var, df)
 
@@ -324,6 +354,10 @@ def update_kriging_plot(n_clicks, independent_vars, dependent_var, data):
 )
 def udpate_table(data, store_data_value):
     df = pd.read_json(StringIO(store_data_value), orient='split')
+    if 'Experiment' in df.columns:
+        # Se existir, remover a coluna 'Experiment'
+        df = df.drop(columns=['Experiment'])
+
     if data:
         dff = df.copy()
         for col in data:
@@ -352,6 +386,10 @@ def udpate_table(data, store_data_value):
 )
 def updateFilters(data, store_data_value):
     df = pd.read_json(StringIO(store_data_value), orient='split')
+    if 'Experiment' in df.columns:
+        # Se existir, remover a coluna 'Experiment'
+        df = df.drop(columns=['Experiment'])
+
     dims = df.columns
     if data:
         key = list(data[0].keys())[0]
@@ -371,8 +409,22 @@ def updateFilters(data, store_data_value):
 def generate_excel(n_clicks, stat_data_value):
     filename = "assets/statistics.xlsx"
     df = pd.DataFrame(stat_data_value)
+    if 'Experiment' in df.columns:
+        # Se existir, remover a coluna 'Experiment'
+        df = df.drop(columns=['Experiment'])
+
     df.to_excel(filename, index=False)
     return dcc.send_file(filename)
+
+
+# Callback para exibir o nome do arquivo após o upload
+@app.callback(Output('file-name-output', 'children'),
+              [Input('upload-data', 'contents'),
+               Input('upload-data', 'filename')])
+def update_output(contents, filename):
+    if contents is not None:
+        TextoH2 = filename + " loaded!"
+        return html.H2(TextoH2)
 
 
 if __name__ == '__main__':
